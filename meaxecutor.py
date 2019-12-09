@@ -125,6 +125,7 @@ def create_threads(e, stop_mutex):
     return [io_thread, cpu_thread, net_thread]
 
 def main(sql_query):
+    # e for signalling to start measuring, vice versa ;)
     e = Event()
     stop_measuring = False
 
@@ -139,14 +140,19 @@ def main(sql_query):
 
     # start measurement, execute query, stop measurement
     time.sleep(0.1)
-    print('Starting...')
-    e.set()
-    cur.execute(sql_query)
+    try:
+        query_status = True
+        e.set()
+        cur.execute(sql_query)
+    except psycopg2.errors.SyntaxError:
+        query_status = False
+        print("SQL Syntax error!")
+
     stop_measuring = True
-    print('End!')
 
     # results
-    print(cur.fetchone())
+    if query_status:
+        print(cur.fetchone())
 
     # cleanup
     for t in threads:
