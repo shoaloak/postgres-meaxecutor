@@ -14,6 +14,8 @@ DB_CREDENTIALS  = "dbname=stackoverflow user=owa"
 DELTA           = 0.1     # min: 0.1
 DISK            = 'sdb1'
 LOG_DIR         = 'logs/'
+NIC             = 'eno4'
+MB              = 1024*1024
 
 def io_measurer(e, stop):
     log_fn = LOG_DIR + "io_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
@@ -23,34 +25,33 @@ def io_measurer(e, stop):
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    log_fp.write("Date, Time, Written MB, Read MB, Busy Time(ms), Writen Total MB, Read Total MB, Busy Time Total (ms)\n")
+    log_fp.write("Date, Time, Written(B), Read(B), Busy Time(ms)\n")
 
     e.wait()
-    hdd_dict = psutil.disk_io_counters(perdisk=True)[DISK]
-    # TODO: change to dict
-    # metric_dict = {'readb': hdd_dict[2],
-    #                'writeb': hdd_dict[3],
-    #                'busyt': hdd_dict[8]}
-    readb = hdd_dict[2]
-    writeb = hdd_dict[3]
-    busyt = hdd_dict[8]
+    hdd_metrics = psutil.disk_io_counters(perdisk=True)[DISK]
+    # TODO: change to dict or list... ugly as hell
+    # metric_dict = {'readb': hdd_metrics[2],
+    #                'writeb': hdd_metrics[3],
+    #                'busyt': hdd_metrics[8]}
+    readb = hdd_metrics.read_bytes
+    writeb = hdd_metrics.write_bytes
+    busyt = hdd_metrics.busy_time
     while True:
         time.sleep(DELTA)
         ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
-        hdd_dict = psutil.disk_io_counters(perdisk=True)[DISK]
+        hdd_metrics = psutil.disk_io_counters(perdisk=True)[DISK]
 
-        writebnew = hdd_dict[2]
-        readbnew = hdd_dict[3]
-        busytnew = hdd_dict[8]
-        writebcy = writebnew - writeb
-        readbcy = readbnew - readb
-        busytcy = busytnew - busyt
-        writeb = writebnew
-        readb = readbnew
-        busyt = busytnew
+        readb_new = hdd_metrics.read_bytes
+        writeb_new = hdd_metrics.write_bytes
+        busyt_new = hdd_metrics.busy_time
+        writeb_diff = writeb_new - writeb
+        readb_diff = readb_new - readb
+        busyt_diff = busyt_new - busyt
+        writeb = writeb_new
+        readb = readb_new
+        busyt = busyt_new
 
-        log_fp.write(ts + "," + str(writebcy/1048576) + "," + str(readbcy/1048576) + "," + str(busytcy) + "," + str(writebnew/1048576) + "," + str(readbnew/1048576) + "," + str(busytnew) + "\n")
-
+        log_fp.write(ts + "," + str(writeb_diff) + "," + str(readb_diff) + "," + str(busyt_diff) + "\n")
         if stop():
             log_fp.close()
             break
@@ -63,15 +64,13 @@ def cpu_measurer(e, stop):
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    e.wait()
-    # get cpu stuff
     csv_header = "Date, Time"
     no_cores = psutil.cpu_count()
     for core in range(no_cores):
-        csv_header += ", CPU{} %".format(core)
-        
+        csv_header += ", CPU{}%".format(core)
     log_fp.write(csv_header + "\n")
 
+    e.wait()
     while True:
         ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
 
@@ -93,21 +92,37 @@ def net_measurer(e, stop):
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    e.wait()
-    # get net stuff
-    while True:
+    log_fp.write("Date, Time, sent(B), received(B)\n")
 
+    e.wait()
+    net_metrics = psutil.net_io_counters(pernic=True, nowrap=True)[NIC]
+    sentb = net_metrics.bytes_sent
+    recvb = net_metrics.bytes_recv
+    while True:
+        time.sleep(DELTA)
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+        net_metrics = psutil.net_io_counters(pernic=True, nowrap=True)[NIC]
+
+        sentb_new = net_metrics.bytes_sent
+        recvb_new = net_metrics.bytes_recv
+        sentb_diff = sentb_new - sentb
+        recvb_diff = recvb_new - recvb
+        sentb = sentb_new
+        recvb = recvb_new
+
+        log_fp.write(ts + "," + str(sentb_diff) + "," + str(recvb_diff) + "\n")
         if stop():
             log_fp.close()
             break
 
+# TODO: create
+#def mem_measurer(e, stop):
+
 def create_threads(e, stop_mutex):
     io_thread = Thread(target=io_measurer, args=(e,stop_mutex,))
     cpu_thread = Thread(target=cpu_measurer, args=(e,stop_mutex,))
-    #net_thread = Thread(target=net_measurer, args=(e,stop_mutex,))
-
-    #return [io_thread, cpu_thread, net_thread]
-    return [io_thread, cpu_thread]
+    net_thread = Thread(target=net_measurer, args=(e,stop_mutex,))
+    return [io_thread, cpu_thread, net_thread]
 
 def main(sql_query):
     e = Event()
