@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime
+import os
 import sys
 from threading import Event, Thread
 import time
@@ -9,12 +10,13 @@ import psutil
 import psycopg2
 
 # GLOBALS
-DB_CREDENTIALS = "dbname=stackoverflow user=owa"
-DISK = 'sdb1'
-DELTA = 0.1
+DB_CREDENTIALS  = "dbname=stackoverflow user=owa"
+DELTA           = 0.1     # min: 0.1
+DISK            = 'sdb1'
+LOG_DIR         = 'logs/'
 
 def io_measurer(e, stop):
-    log_fn = "io_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "io_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -54,7 +56,7 @@ def io_measurer(e, stop):
             break
 
 def cpu_measurer(e, stop):
-    log_fn = "cpu_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "cpu_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -63,14 +65,28 @@ def cpu_measurer(e, stop):
     
     e.wait()
     # get cpu stuff
-    while True:
+    csv_header = "Date, Time"
+    no_cores = psutil.cpu_count()
+    for core in range(no_cores):
+        csv_header += ", CPU{} %".format(core)
+        
+    log_fp.write(csv_header + "\n")
 
+    while True:
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+
+        percents = psutil.cpu_percent(interval=DELTA, percpu=True)
+        percent_str = "{}".format(str(percents[0]))
+        for percent in percents[1:]:
+            percent_str += ", {}".format(str(percent))
+
+        log_fp.write(ts + "," + percent_str + "\n")
         if stop():
             log_fp.close()
             break
 
 def net_measurer(e, stop):
-    log_fn = "net_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "net_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -87,11 +103,11 @@ def net_measurer(e, stop):
 
 def create_threads(e, stop_mutex):
     io_thread = Thread(target=io_measurer, args=(e,stop_mutex,))
-    #cpu_thread = Thread(target=cpu_measurer, args=(e,stop_mutex,))
+    cpu_thread = Thread(target=cpu_measurer, args=(e,stop_mutex,))
     #net_thread = Thread(target=net_measurer, args=(e,stop_mutex,))
 
     #return [io_thread, cpu_thread, net_thread]
-    return [io_thread]
+    return [io_thread, cpu_thread]
 
 def main(sql_query):
     e = Event()
@@ -127,5 +143,8 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("usage: {} [SQL query]".format(sys.argv[0]))
         sys.exit(1)
+
+    if not os.path.exists(LOG_DIR):
+        os.makedirs(LOG_DIR)
 
     main(sys.argv[1])
