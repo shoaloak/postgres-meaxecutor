@@ -115,14 +115,46 @@ def net_measurer(e, stop):
             log_fp.close()
             break
 
-# TODO: create
-#def mem_measurer(e, stop):
+def mem_measurer(e, stop):
+    log_fn = LOG_DIR + "mem_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    try:
+        log_fp = open(log_fn, "a+")
+    except IOError:
+        print("error opening {}".format(log_fn))
+        sys.exit(1)
+    
+    log_fp.write("Date, Time, Used RAM(B), Used swap(B)\n")
+
+    e.wait()
+    #mem_metrics = psutil.net_io_counters()
+    #swap_metrics = psutil.swap_memory()
+    #usedb = mem_metrics.active
+    #usedswapb = swap_metrics.used
+
+    while True:
+        time.sleep(DELTA)
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+        mem_metrics = psutil.virtual_memory().active
+        swap_metrics = psutil.swap_memory().used
+
+        #usedb_new = mem_metrics.active
+        #usedswapb_new = swap_metrics.used
+        #usedb_diff = usedb_new - usedb
+        #usedswapb_diff = usedswapb_new - usedswapb
+        #usedb = usedb_new
+        #usedswapb = usedswapb_new
+
+        log_fp.write(ts + "," + str(mem_metrics) + "," + str(swap_metrics) + "\n")
+        if stop():
+            log_fp.close()
+            break
 
 def create_threads(e, stop_mutex):
     io_thread = Thread(target=io_measurer, args=(e,stop_mutex,))
     cpu_thread = Thread(target=cpu_measurer, args=(e,stop_mutex,))
     net_thread = Thread(target=net_measurer, args=(e,stop_mutex,))
-    return [io_thread, cpu_thread, net_thread]
+    mem_thread = Thread(target=mem_measurer, args=(e,stop_mutex,))
+    return [io_thread, cpu_thread, net_thread, mem_thread]
 
 def main(sql_query):
     # e for signalling to start measuring, vice versa ;)
@@ -144,7 +176,7 @@ def main(sql_query):
         query_status = True
         e.set()
         cur.execute(sql_query)
-    except psycopg2.errors.SyntaxError:
+    except psycopg2.Error:
         query_status = False
         print("SQL Syntax error!")
 
