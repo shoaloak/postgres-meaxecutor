@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 
 # packages
 import pandas as pd
@@ -28,6 +29,20 @@ class Metric:
         self.mem = pd.read_csv(mem_log_path)
         self.net = pd.read_csv(net_log_path)
 
+    def get_io_plt(self):
+        #plt.title('Input/Output')
+        #plt.xlabel('Time')
+        #plt.ylabel('Bytes')
+
+        # gca = get current axis
+        ax=plt.gca()
+
+        self.io.plot(kind='line', x='Time', y='Written(B)', ax=ax)
+        self.io.plot(kind='line', x='Time', y='Read(B)', ax=ax)
+
+        plt.legend()
+        plt.show()
+
 def get_unique_tss():
     metric_ident = ['mem', 'cpu', 'io', 'net']
     metric_ident += ['_stats', '.csv']
@@ -48,8 +63,8 @@ def create_metrics(tss):
 
 def main():
     metrics = create_metrics(get_unique_tss())
-    #for m in metrics:
-    #    print(m.net)
+    for m in metrics:
+        m.get_io_plt()
 
 if __name__ == "__main__":
     main()
