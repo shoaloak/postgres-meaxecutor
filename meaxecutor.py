@@ -19,19 +19,21 @@ DISK            = 'sdb1'
 LOG_DIR         = 'logs/'
 NIC             = 'eno4'
 MB              = 1024*1024
+METRIC_IDENT    = '-%m%d%H%M%S'
+TS_FMT          = '%H:%M:%S.%f'
 
 HOST            = '' # INADDR_ANY
 PORT            = 31337
 
 def io_measurer(e, stop):
-    log_fn = LOG_DIR + "io_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "io_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    log_fp.write("Date, Time, Written(B), Read(B), Busy Time(ms)\n")
+    log_fp.write("Time,Written(B),Read(B),Busy Time(ms)\n")
 
     e.wait()
     hdd_metrics = psutil.disk_io_counters(perdisk=True)[DISK]
@@ -44,7 +46,7 @@ def io_measurer(e, stop):
     busyt = hdd_metrics.busy_time
     while True:
         time.sleep(DELTA)
-        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime(TS_FMT)
         hdd_metrics = psutil.disk_io_counters(perdisk=True)[DISK]
 
         readb_new = hdd_metrics.read_bytes
@@ -63,7 +65,7 @@ def io_measurer(e, stop):
             break
 
 def cpu_measurer(e, stop):
-    log_fn = LOG_DIR + "cpu_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "cpu_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -78,7 +80,7 @@ def cpu_measurer(e, stop):
 
     e.wait()
     while True:
-        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime(TS_FMT)
 
         percents = psutil.cpu_percent(interval=DELTA, percpu=True)
         percent_str = "{}".format(str(percents[0]))
@@ -91,14 +93,14 @@ def cpu_measurer(e, stop):
             break
 
 def net_measurer(e, stop):
-    log_fn = LOG_DIR + "net_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "net_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    log_fp.write("Date, Time, sent(B), received(B)\n")
+    log_fp.write("Date,Time,sent(B),received(B)\n")
 
     e.wait()
     net_metrics = psutil.net_io_counters(pernic=True, nowrap=True)[NIC]
@@ -106,7 +108,7 @@ def net_measurer(e, stop):
     recvb = net_metrics.bytes_recv
     while True:
         time.sleep(DELTA)
-        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime(TS_FMT)
         net_metrics = psutil.net_io_counters(pernic=True, nowrap=True)[NIC]
 
         sentb_new = net_metrics.bytes_sent
@@ -122,14 +124,14 @@ def net_measurer(e, stop):
             break
 
 def mem_measurer(e, stop):
-    log_fn = LOG_DIR + "mem_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
+    log_fn = LOG_DIR + "mem_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    log_fp.write("Date, Time, Used RAM(B), Used swap(B)\n")
+    log_fp.write("Date,Time,Used RAM(B),Used swap(B)\n")
 
     e.wait()
     #mem_metrics = psutil.net_io_counters()
@@ -139,7 +141,7 @@ def mem_measurer(e, stop):
 
     while True:
         time.sleep(DELTA)
-        ts = datetime.datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y,%H:%M:%S')
+        ts = datetime.datetime.fromtimestamp(time.time()).strftime(TS_FMT)
         mem_metrics = psutil.virtual_memory().active
         swap_metrics = psutil.swap_memory().used
 
