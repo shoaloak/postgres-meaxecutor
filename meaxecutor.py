@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
+import argparse
 import datetime
 import os
+import socket
 import sys
 from threading import Event, Thread
 import time
@@ -10,12 +12,16 @@ import psutil
 import psycopg2
 
 # GLOBALS
+DESCRIPTION = "Measure CPU, Memory, IO, and network when performing PostgreSQL query in a sharded environment."
 DB_CREDENTIALS  = "dbname=stackoverflow user=owa"
 DELTA           = 0.1     # min: 0.1
 DISK            = 'sdb1'
 LOG_DIR         = 'logs/'
 NIC             = 'eno4'
 MB              = 1024*1024
+
+HOST            = '127.0.0.1'
+PORT            = 31337
 
 def io_measurer(e, stop):
     log_fn = LOG_DIR + "io_stats{}.csv".format(datetime.datetime.now().strftime("%d%m-%H%M%s"))
@@ -149,20 +155,41 @@ def mem_measurer(e, stop):
             log_fp.close()
             break
 
-def create_threads(e, stop_mutex):
+def notify_server(e, stop, address):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((address, PORT))
+
+        e.wait()
+        s.sendall(b'START')
+
+        while True:
+            time.sleep(DELTA)
+            if stop():
+                s.sendall(b'STOP')
+                break
+
+def create_measure_threads(e, stop_mutex):
     io_thread = Thread(target=io_measurer, args=(e,stop_mutex,))
     cpu_thread = Thread(target=cpu_measurer, args=(e,stop_mutex,))
     net_thread = Thread(target=net_measurer, args=(e,stop_mutex,))
     mem_thread = Thread(target=mem_measurer, args=(e,stop_mutex,))
     return [io_thread, cpu_thread, net_thread, mem_thread]
 
-def main(sql_query):
+def create_notify_threads(e, stop_mutex, addresses):
+    threads = []
+    for address in addresses:
+        threads.append(Thread(target=notify_server, args=(e,stop_mutex,address,)))
+    return threads
+
+def main(sql_query, server_addresses):
     # e for signalling to start measuring, vice versa ;)
     e = Event()
     stop_measuring = False
 
     # create threads and start them
-    threads = create_threads(e, lambda : stop_measuring,)
+    threads = create_measure_threads(e, lambda : stop_measuring,)
+    if server_addresses != None:
+        threads += create_notify_threads(e, lambda : stop_measuring, server_addresses,)
     for t in threads:
         t.start()
 
@@ -192,12 +219,62 @@ def main(sql_query):
     cur.close()
     conn.close()
 
+def server():
+    # e for signalling to start measuring, vice versa ;)
+    e = Event()
+    stop_measuring = False
+
+    # create threads and start them
+    threads = create_measure_threads(e, lambda : stop_measuring,)
+    for t in threads:
+        t.start()
+
+    try:
+        print("Waiting for connection on port {}...".format(PORT))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen()
+            conn, addr = s.accept()
+            with conn:
+                print("Connected by {}".format(addr))
+                while True:
+                    data = conn.recv(1024)
+                    if not data:
+                        print("The connection broke!")
+                        break
+                    elif data == b'START':
+                        print("Started measuring...   ", end='')
+                        e.set()
+                    elif data == b'STOP':
+                        print("done!")
+                        stop_measuring = True
+                        break
+
+    except KeyboardInterrupt:
+        stop_measuring = True
+        sys.exit(0)
+
+    # cleanup
+    for t in threads:
+        t.join()
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("usage: {} [SQL query]".format(sys.argv[0]))
-        sys.exit(1)
+    parser = argparse.ArgumentParser(DESCRIPTION)
+    parser.add_argument("-q", "--query", help="PostgreSQL query to execute")
+    parser.add_argument("-a", "--addresses", help="comma seperated addresses of servers to notify")
+    parser.add_argument("-s", "--serve", help="Create server instance that waits for instruction to start/stop measuring", action="store_true")
+    args = parser.parse_args()
 
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
 
-    main(sys.argv[1])
+    if args.serve:
+        while True:
+            server()
+    elif args.query:
+        addrs = None
+        if args.addresses:
+            addrs = args.addresses.split(',')
+        main(args.query, addrs)
+    else:
+        print('Please supply either serve or query')
