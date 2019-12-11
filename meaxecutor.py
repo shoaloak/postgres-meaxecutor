@@ -20,7 +20,7 @@ LOG_DIR         = 'logs/'
 NIC             = 'eno4'
 MB              = 1024*1024
 
-HOST            = '127.0.0.1'
+HOST            = '' # INADDR_ANY
 PORT            = 31337
 
 def io_measurer(e, stop):
@@ -157,7 +157,11 @@ def mem_measurer(e, stop):
 
 def notify_server(e, stop, address):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((address, PORT))
+        try:
+            s.connect((address, PORT))
+        except:
+            print("Couldn't connect to {}".format(address))
+            sys.exit(1)
 
         e.wait()
         s.sendall(b'START')
