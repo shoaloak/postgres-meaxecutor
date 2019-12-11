@@ -230,7 +230,8 @@ def server():
         t.start()
 
     try:
-        print("Waiting for connection on port {}...".format(PORT))
+        ip = socket.gethostbyname(socket.gethostname())
+        print("Waiting for connection on {} port {}...".format(ip,PORT))
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
