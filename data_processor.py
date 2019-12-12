@@ -35,13 +35,30 @@ class Metric:
         #plt.ylabel('Bytes')
 
         # gca = get current axis
-        ax=plt.gca()
+        ax = plt.gca()
 
-        self.io.plot(kind='line', x='Time', y='Written(B)', ax=ax)
-        self.io.plot(kind='line', x='Time', y='Read(B)', ax=ax)
+        io_time = self.io.columns[0]
+        io_read = self.io.columns[1]
+        io_write = self.io.columns[2]
+        io_busy_time = self.io.columns[3]
+
+        self.io.plot(kind='line', x=io_time, y=io_read, ax=ax)
+        self.io.plot(kind='line', x=io_time, y=io_write, ax=ax)
 
         plt.legend()
         plt.show()
+
+    def get_cpu_plt(self):
+        ax = plt.gca()
+
+        time = self.cpu.columns[0]
+
+        for cpu_no in self.cpu.columns[1:]:
+            self.cpu.plot(kind='line', x=time, y=cpu_no, ax=ax)
+
+        plt.legend()
+        plt.show()
+        
 
 def get_unique_tss():
     metric_ident = ['mem', 'cpu', 'io', 'net']
@@ -64,7 +81,7 @@ def create_metrics(tss):
 def main():
     metrics = create_metrics(get_unique_tss())
     for m in metrics:
-        m.get_io_plt()
+        m.get_cpu_plt()
 
 if __name__ == "__main__":
     main()
