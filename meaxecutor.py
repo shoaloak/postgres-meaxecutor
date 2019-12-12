@@ -73,7 +73,7 @@ def cpu_measurer(e, stop):
         sys.exit(1)
     
     # generate header
-    csv_header = "Date,Time"
+    csv_header = "Time"
     no_cores = psutil.cpu_count()
     for core in range(no_cores):
         csv_header += ",CPU{}%".format(core)
