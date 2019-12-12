@@ -101,7 +101,7 @@ def net_measurer(e, stop):
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    log_fp.write("Date,Time,sent(B),received(B)\n")
+    log_fp.write("Time,sent(B),received(B)\n")
 
     e.wait()
     net_metrics = psutil.net_io_counters(pernic=True, nowrap=True)[NIC]
@@ -132,7 +132,7 @@ def mem_measurer(e, stop):
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    log_fp.write("Date,Time,Used RAM(B),Used swap(B)\n")
+    log_fp.write("Time,Used RAM(MB),Used swap(MB)\n")
 
     e.wait()
     #mem_metrics = psutil.net_io_counters()
@@ -146,14 +146,10 @@ def mem_measurer(e, stop):
         mem_metrics = psutil.virtual_memory().active
         swap_metrics = psutil.swap_memory().used
 
-        #usedb_new = mem_metrics.active
-        #usedswapb_new = swap_metrics.used
-        #usedb_diff = usedb_new - usedb
-        #usedswapb_diff = usedswapb_new - usedswapb
-        #usedb = usedb_new
-        #usedswapb = usedswapb_new
+        mem_mb = round(mem_metrics / MB)
+        swap_mb = round(swap_metrics / MB)
 
-        log_fp.write(ts + "," + str(mem_metrics) + "," + str(swap_metrics) + "\n")
+        log_fp.write(ts + "," + str(mem_mb) + "," + str(swap_mb) + "\n")
         if stop():
             log_fp.close()
             break

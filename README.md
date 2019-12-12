@@ -21,4 +21,8 @@ on a (sharded) PostgreSQL database.
 ```
 
 ## deps
+meaxector:
 apt install postgresql-server-dev-11
+
+data processor:
+apt install python3-tk
