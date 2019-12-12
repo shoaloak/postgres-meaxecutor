@@ -19,7 +19,7 @@ DISK            = 'sdb1'
 LOG_DIR         = 'logs/'
 NIC             = 'eno4'
 MB              = 1024*1024
-METRIC_IDENT    = '-%m%d%H%M%S'
+METRIC_IDENT    = '-%m%d%H%M%S%f'
 TS_FMT          = '%H:%M:%S.%f'
 
 HOST            = '' # INADDR_ANY
