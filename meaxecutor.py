@@ -72,10 +72,11 @@ def cpu_measurer(e, stop):
         print("error opening {}".format(log_fn))
         sys.exit(1)
     
-    csv_header = "Date, Time"
+    # generate header
+    csv_header = "Date,Time"
     no_cores = psutil.cpu_count()
     for core in range(no_cores):
-        csv_header += ", CPU{}%".format(core)
+        csv_header += ",CPU{}%".format(core)
     log_fp.write(csv_header + "\n")
 
     e.wait()
