@@ -39,7 +39,7 @@ run_experiment() {
 			clear_cache_postgres
 		fi
 		echo "Running $i iteration..."
-		./measure_while_executing_sql.py -q "$query" > "exp$1_cache$CACHE.result"
+		./measure_while_executing_sql.py -q "$query" > "exp$i-cache$CACHE.result"
 		i=$(($i+1))
 	done
 }

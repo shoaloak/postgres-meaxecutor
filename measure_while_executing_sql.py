@@ -224,7 +224,7 @@ def main(sql_query, server_addresses):
 
     # results
     if query_status:
-        print(cur.fetchone())
+        print(cur.fetchall())
 
     # cleanup
     for t in threads:
