@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import base64
 import datetime
 import os
 import socket
@@ -19,14 +20,17 @@ DISK            = 'sdb1'
 LOG_DIR         = 'logs/'
 NIC             = 'eno4'
 MB              = 1024*1024
-METRIC_IDENT    = '-%m%d%H%M%S%f'
+METRIC_IDENT    = '%d%H%M%S'
+XTRA_IDENT      = base64.b64encode(os.urandom(32))[:8].decode("utf-8")
 TS_FMT          = '%H:%M:%S.%f'
 
 HOST            = '' # INADDR_ANY
 PORT            = 31337
 
 def io_measurer(e, stop):
-    log_fn = LOG_DIR + "io_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
+    log_fn = LOG_DIR + "io_stats-{}{}.csv".format(
+            XTRA_IDENT,
+            datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -65,7 +69,9 @@ def io_measurer(e, stop):
             break
 
 def cpu_measurer(e, stop):
-    log_fn = LOG_DIR + "cpu_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
+    log_fn = LOG_DIR + "cpu_stats-{}{}.csv".format(
+            XTRA_IDENT,
+            datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -94,7 +100,9 @@ def cpu_measurer(e, stop):
             break
 
 def net_measurer(e, stop):
-    log_fn = LOG_DIR + "net_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
+    log_fn = LOG_DIR + "net_stats-{}{}.csv".format(
+            XTRA_IDENT,
+            datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:
@@ -125,7 +133,9 @@ def net_measurer(e, stop):
             break
 
 def mem_measurer(e, stop):
-    log_fn = LOG_DIR + "mem_stats{}.csv".format(datetime.datetime.now().strftime(METRIC_IDENT))
+    log_fn = LOG_DIR + "mem_stats-{}{}.csv".format(
+            XTRA_IDENT,
+            datetime.datetime.now().strftime(METRIC_IDENT))
     try:
         log_fp = open(log_fn, "a+")
     except IOError:

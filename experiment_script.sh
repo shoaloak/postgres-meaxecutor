@@ -2,6 +2,7 @@
 
 # set to false if you dont want cached experiments
 CACHE=true
+N=3
 
 check_if_su() {
 	if [ "$EUID" -ne 0 ]
@@ -31,13 +32,14 @@ multi_query() {
 run_experiment() {
 	query=$1
 
-	for i in {0..2}
+	while [ "$i" -le "$(($N - 1))" ];
 	do
 		if $CACHE
 		then
 			clear_cache_postgres
 		fi
 		./measure_while_executing_sql.py -q "$query" > "exp$1_cache$CACHE.result"
+		i=$(($i + 1))
 	done
 }
 
