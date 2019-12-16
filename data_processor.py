@@ -142,9 +142,9 @@ def main():
 
     for m in metrics:
         m.get_cpu_plt()
-        #m.get_io_plt()
-        #m.get_mem_plt()
-        #m.get_net_plt()
+        m.get_io_plt()
+        m.get_mem_plt()
+        m.get_net_plt()
 
 if __name__ == "__main__":
     main()

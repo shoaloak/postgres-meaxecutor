@@ -26,7 +26,7 @@
 
 # this scripts assumes that the meaxecutor is in $HOME on the cephs
 
-DST="./logs"
+DST="./"
 #mkdir -p "$DST"{1,2,4}
 
 scp -r ceph1:~/postgres-meaxecutor/logs "$DST"
