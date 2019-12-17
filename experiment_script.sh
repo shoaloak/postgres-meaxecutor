@@ -13,9 +13,11 @@ check_if_su() {
 
 clear_cache_postgres() {
 	check_if_su
+	echo stopping DB
 	systemctl stop postgresql.service
-	# clear pagecache and dentries/inodes
+	echo clear pagecache and dentries/inodes
 	echo 3 > /proc/sys/vm/drop_caches
+	echo starting DB
 	systemctl start postgresql.service
 }
 

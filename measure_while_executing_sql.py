@@ -14,7 +14,7 @@ import psycopg2
 
 # GLOBALS
 DESCRIPTION = "Measure CPU, Memory, IO, and network when performing PostgreSQL query in a sharded environment."
-DB_CREDENTIALS  = "dbname=stackoverflow user=owa"
+DB_CREDENTIALS  = "dbname='stackoverflow' user='owa' host='localhost' password='LargeSystems2019'"
 DELTA           = 0.1     # min: 0.1
 DISK            = 'sdb1'
 LOG_DIR         = 'logs/'
