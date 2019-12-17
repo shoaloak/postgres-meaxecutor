@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set to false if you dont want cached experiments
-CACHE=true
+CACHE=false
 N=3
 
 check_if_su() {
@@ -39,7 +39,8 @@ run_experiment() {
 			clear_cache_postgres
 		fi
 		echo "Running $i iteration..."
-		./measure_while_executing_sql.py -q "$query" > "exp$i-cache$CACHE.result"
+		echo "$i iteration..." >> "exp$i-cache$CACHE.result"
+		./measure_while_executing_sql.py -q "$query" >> "exp$i-cache$CACHE.result"
 		i=$(($i+1))
 	done
 }
