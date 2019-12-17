@@ -32,6 +32,9 @@ multi_query() {
 run_experiment() {
 	query=$*
 
+	d=`date +%j%H%M%S%N`
+	echo "$query\n" >> "exp$d-cache$CACHE.result"
+
 	i=1
 	while [ "$i" -le "$(($N))" ]; do
 		if ! $CACHE
@@ -39,8 +42,8 @@ run_experiment() {
 			clear_cache_postgres
 		fi
 		echo "Running $i iteration..."
-		echo "$i iteration..." >> "exp$i-cache$CACHE.result"
-		./measure_while_executing_sql.py -q "$query" >> "exp$i-cache$CACHE.result"
+		echo "$i iteration..." >> "exp$d-cache$CACHE.result"
+		./measure_while_executing_sql.py -q "$query" >> "exp$d-cache$CACHE.result"
 		i=$(($i+1))
 	done
 }
