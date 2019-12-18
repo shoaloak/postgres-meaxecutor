@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set to false if you dont want cached experiments
-CACHE=false
+CACHE=true
 N=3
 
 check_if_su() {
@@ -35,7 +35,7 @@ run_experiment() {
 	query=$*
 
 	d=`date +%j%H%M%S%N`
-	echo "$query\n" >> "exp$d-cache$CACHE.result"
+	echo "$query\n" >> "exp$d-cache$CACHE.result.txt"
 
 	i=1
 	while [ "$i" -le "$(($N))" ]; do
@@ -44,8 +44,8 @@ run_experiment() {
 			clear_cache_postgres
 		fi
 		echo "Running $i iteration..."
-		echo "$i iteration..." >> "exp$d-cache$CACHE.result"
-		./measure_while_executing_sql.py -q "$query" >> "exp$d-cache$CACHE.result"
+		echo "$i iteration..." >> "exp$d-cache$CACHE.result.txt"
+		./measure_while_executing_sql.py -q "$query" >> "exp$d-cache$CACHE.result.txt"
 		i=$(($i+1))
 	done
 }

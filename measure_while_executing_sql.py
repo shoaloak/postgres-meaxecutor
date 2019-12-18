@@ -3,6 +3,7 @@ import argparse
 import base64
 import datetime
 import os
+import re
 import socket
 import sys
 from threading import Event, Thread
@@ -21,7 +22,7 @@ LOG_DIR         = 'logs/'
 NIC             = 'eno4'
 MB              = 1024*1024
 METRIC_IDENT    = '%d%H%M%S'
-XTRA_IDENT      = base64.b64encode(os.urandom(32))[:8].decode("utf-8").strip('/.')
+XTRA_IDENT      = re.sub(r'\W+', '', base64.b64encode(os.urandom(32))[:8].decode("utf-8"))
 TS_FMT          = '%H:%M:%S.%f'
 
 HOST            = '' # INADDR_ANY
