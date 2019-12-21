@@ -213,19 +213,28 @@ def main(sql_query, server_addresses):
 
     # start measurement, execute query, stop measurement
     time.sleep(0.1)
+    start = end = None
     try:
         query_status = True
         e.set()
+        start = time.time()
         cur.execute(sql_query)
     except psycopg2.Error:
         query_status = False
         print("SQL Syntax error!")
 
+    end  = time.time()
     stop_measuring = True
 
     # results
     if query_status:
-        print(cur.fetchall())
+        try:
+            print(cur.fetchall())
+        except psycopg2.Error:
+            print("no results")
+    print("Time spent: {}".format(end-start))
+    if "INSERT" in sql_query or "UPDATE" in sql_query:
+        conn.commit()
 
     # cleanup
     for t in threads:
